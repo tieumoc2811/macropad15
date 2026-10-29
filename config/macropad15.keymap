@@ -1,0 +1,150 @@
+#include <behaviors.dtsi>
+#include <dt-bindings/zmk/keys.h>
+
+/*
+ * Macropad15 - 15 phim + 3 encoder - Pro Micro RP2040 (chi USB).
+ *
+ * 4 layer: 0 Numpad, 1 Media, 2 Nokia, 3 FN (giu phim FN).
+ *
+ * Vi tri phim (so do vat ly 5x3, moi layer co 19 binding = 15 phim + c3r3 + 3 nut nhan encoder):
+ *
+ *   c0r0  c0r1  c0r2  c0r3  c1r0
+ *   c1r1  c1r2  c1r3  c2r0  c2r1
+ *   c2r2  c2r3  c3r0  c3r1  c3r2
+ *   c3r3 (nut layer cycle, vi tri vat ly: duoi c3r2)
+ *   [ENC1 push] [ENC2 push] [ENC3 push]
+ *
+ * ---- Layer 0: Numpad ----
+ *   7    8    9    -(giu: /)   FN (giu)
+ *   4    5    6    ENTER       +(giu: *)
+ *   1    2    3    0           .
+ *   ENC1: xoay = am luong, nhan = mute
+ *   ENC2: xoay = mui ten trai/phai, nhan = Backspace
+ *   c3r3: chuyen layer (&layer_cycle) o moi layer
+ *   ENC3: xoay = mui ten len/xuong, nhan = Tab
+ *
+ * ---- Layer 1: Media ----   ---- Layer 2: Nokia ----
+ *   Xem ben duoi.
+ *
+ * Nokia: nhap chu kieu dien thoai Nokia cu (bam lien tiep cung phim de doi ky tu):
+ *     1=1abc 2=2def 3=3ghi 4=4jkl 5=5mno 6=6pqr 7=7stu 8=8vwx 9=9yz 0=0+space '.'=. , ? !
+ *     c0r3 = Caps Word, c2r1 = Shift (sticky), ENTER giu nguyen, Backspace = nhan ENC2, c3r3 = layer cycle
+ *
+ * FN (layer 3) o goc tren phai nen luon de len cac layer khac: giu FN thi cac phim
+ * FN luon hoat dong, bat ke dang o layer nao.
+ *
+ * ---- Layer 3: FN (giu phim FN) ----
+ *   Hang 1, cot 4 : Studio unlock
+ *   Hang 2, cot 4 : reset      Hang 2, cot 5 : bootloader (UF2)
+ *   c3r3          : van la layer cycle
+ */
+
+#define FN 3
+
+/*
+ * Nokia multi-tap: bam lien tiep CUNG phim trong 600ms de doi ky tu.
+ * Ky tu hien ngay (gui Backspace + ky tu moi khi doi).
+ */
+#define MULTITAP(id, title, ...)                            \
+    id: id {                                             \
+        compatible = "zmk,behavior-multitap";                \
+        #binding-cells = <0>;                                \
+        display-name = title;                                \
+        tapping-term-ms = <600>;                             \
+        keys = <__VA_ARGS__>;                                \
+    };
+
+/ {
+    behaviors {
+        MULTITAP(td_1, "Nokia 1abc", N1 A B C)
+        MULTITAP(td_2, "Nokia 2def", N2 D E F)
+        MULTITAP(td_3, "Nokia 3ghi", N3 G H I)
+        MULTITAP(td_4, "Nokia 4jkl", N4 J K L)
+        MULTITAP(td_5, "Nokia 5mno", N5 M N O)
+        MULTITAP(td_6, "Nokia 6pqr", N6 P Q R)
+        MULTITAP(td_7, "Nokia 7stu", N7 S T U)
+        MULTITAP(td_8, "Nokia 8vwx", N8 V W X)
+        MULTITAP(td_9, "Nokia 9yz", N9 Y Z)
+        MULTITAP(td_0, "Nokia 0 space", N0 SPACE)
+        MULTITAP(td_dot, "Nokia . , ? !", DOT COMMA QMARK EXCL)
+
+        /*
+         * Tap / giu: dung 1 phim cho 2 toan tu.
+         * Cu phap: &ht_op <phim khi GIU> <phim khi NHAN NHANH>
+         *   &ht_op KP_SLASH KP_MINUS    -> nhan = "-", giu = "/"
+         *   &ht_op KP_MULTIPLY KP_PLUS  -> nhan = "+", giu = "*"
+         */
+        ht_op: ht_op {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            display-name = "Tap/Hold Operator";
+            flavor = "tap-preferred";
+            tapping-term-ms = <200>;
+            bindings = <&kp>, <&kp>;
+        };
+    };
+
+    keymap {
+        compatible = "zmk,keymap";
+
+        default_layer {
+            display-name = "Numpad";
+            bindings = <
+                &kp KP_N7  &kp KP_N8  &kp KP_N9  &ht_op KP_SLASH KP_MINUS     &mo FN
+                &kp KP_N4  &kp KP_N5  &kp KP_N6  &kp KP_ENTER                 &ht_op KP_MULTIPLY KP_PLUS
+                &kp KP_N1  &kp KP_N2  &kp KP_N3  &kp KP_N0                    &kp KP_DOT
+                &layer_cycle  &kp C_MUTE &kp BSPC   &kp TAB
+            >;
+            sensor-bindings = <
+                &inc_dec_kp C_VOL_UP C_VOL_DN
+                &inc_dec_kp RIGHT LEFT
+                &inc_dec_kp DOWN UP
+            >;
+        };
+
+        media_layer {
+            display-name = "Media";
+            bindings = <
+                &kp C_PREV &kp C_PP    &kp C_NEXT &kp C_AL_CALC  &trans
+                &kp HOME   &kp UP      &kp END    &kp C_VOL_DN   &kp C_VOL_UP
+                &kp LEFT   &kp DOWN    &kp RIGHT  &kp PG_UP      &kp PG_DN
+                &layer_cycle  &kp C_PP   &kp DEL     &kp RET
+            >;
+            sensor-bindings = <
+                &inc_dec_kp C_VOL_UP C_VOL_DN
+                &inc_dec_kp C_NEXT C_PREV
+                &inc_dec_kp PG_DN PG_UP
+            >;
+        };
+
+        nokia_layer {
+            display-name = "Nokia";
+            bindings = <
+                &td_7      &td_8      &td_9      &caps_word      &trans
+                &td_4      &td_5      &td_6      &kp RET         &sk LSHFT
+                &td_1      &td_2      &td_3      &td_0           &td_dot
+                &layer_cycle  &trans     &trans     &trans
+            >;
+            sensor-bindings = <
+                &inc_dec_kp C_VOL_UP C_VOL_DN
+                &inc_dec_kp RIGHT LEFT
+                &inc_dec_kp DOWN UP
+            >;
+        };
+
+        fn_layer {
+            display-name = "FN";
+            bindings = <
+                &none          &none          &none          &studio_unlock  &trans
+                &none          &none          &none          &sys_reset      &bootloader
+                &none          &none          &none          &none           &none
+                &layer_cycle   &none          &none          &none
+            >;
+            sensor-bindings = <
+                &inc_dec_kp C_VOL_UP C_VOL_DN
+                &inc_dec_kp RIGHT LEFT
+                &inc_dec_kp DOWN UP
+            >;
+        };
+    };
+};

@@ -1,0 +1,5 @@
+# Module ZMK: cac behavior tuy chinh cho ban phim Macropad15 (RP2040)
+zephyr_library()
+zephyr_library_include_directories(${APPLICATION_SOURCE_DIR}/include)
+zephyr_library_sources(src/layer_cycle.c)
+zephyr_library_sources(src/multitap.c)

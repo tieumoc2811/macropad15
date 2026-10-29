@@ -1,0 +1,13 @@
+if SHIELD_MACROPAD15
+
+config ZMK_KEYBOARD_NAME
+	default "Macropad15"
+
+# Encoder EC11 (3 nut xoay)
+config EC11
+	default y
+
+config EC11_TRIGGER_GLOBAL_THREAD
+	default y
+
+endif
